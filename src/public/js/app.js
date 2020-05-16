@@ -1,25 +1,35 @@
-const coords = [-32.89084, -68.82717];
-// Instanciar leaflet
-const map = L.map('map-template').setView(coords, 10);
+// Instanciar leaflet y sockets.io
+const map = L.map('map-template');
+
 const tileURL = 'https://tiles.wmflabs.org/hikebike/{z}/{x}/{y}.png';
+const tile = L.tileLayer(tileURL);
 
+// socket io
+const socket = io.connect();
 
-L.tileLayer(tileURL).addTo(map);
+// Geolocation
+map.locate({ enableHighAccuracy: true });
+map.on('locationfound', e => {
+  const coords = [e.latlng.lat, e.latlng.lng];
+  const marker = L.marker(coords);
+  marker.bindPopup('You are here!');
+  map.locate({ setView: true, maxZoom: 15 });
+  map.addLayer(marker);
 
-// map.locate({ enableHighAccuracy: true })
+  socket.emit('userCoords', e.latlng);
+});
 
-const marker = L.marker(coords);
-marker.bindPopup('Hello there!');
-map.addLayer(marker);
+// socket new user connected
+socket.on('newUserCoordinates', (coords) => {
+  console.log('new user is connected!');
 
-const showPosition = (position) => {
-    console.log(position.coords.latitude);
-}
+  const newMarker = L.marker([coords.lat, coords.lng]);
+  newMarker.bindPopup('New user!');
+  map.addLayer(newMarker);
+});
 
-navigator.geolocation.getCurrentPosition(
-    showPosition,
-    null, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maxiumAge: 0
-    })
+map.addLayer(tile);
+
+// const marker = L.marker(coords);
+// marker.bindPopup('Hello there!');
+// map.addLayer(marker);
